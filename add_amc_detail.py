@@ -4,6 +4,8 @@ from tkcalendar import DateEntry
 from datetime import date
 from db_query import DatabaseConnection, DBQuery
 
+
+
 # Initialize Database Connection
 db_conn = DatabaseConnection()
 db_query = DBQuery(db_conn)
