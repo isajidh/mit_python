@@ -6,6 +6,7 @@ from db_query import DatabaseConnection, DBQuery
 from validation import Validation
 import json
 
+
 # Initialize Database Connection
 db_conn = DatabaseConnection()
 db_query = DBQuery(db_conn)
@@ -18,7 +19,7 @@ def load_session_from_file():
     except FileNotFoundError:
         return None  # Handle the case if the session file is not found
 
-class AddAssetItem(tk.Frame):
+class EditAssetItem(tk.Frame):
     def __init__(self, parent, text):
         super().__init__(parent, background="white")
         self.pack(expand=True, fill="both")
@@ -51,6 +52,12 @@ class AddAssetItem(tk.Frame):
 
         # Fetch asset types from the database
         asset_types = db_query.asset_type()
+
+        rpos += rgap
+        ttk.Label(self.entry_frame, background="white", text="Asset Serial Number", font=("Arial", 10, "bold")).grid(row=rpos, column=0, sticky="w", padx=5, pady=5)
+        self.asset_serial = ttk.Entry(self.entry_frame, width=30, validate="key", validatecommand=vcmdn)
+        self.asset_serial.grid(row=rpos, column=1, padx=5, pady=5, sticky="w")
+        self.asset_serial.bind("<Return>", lambda event: self.show_asset())
 
         rpos += rgap
         ttk.Label(self.entry_frame, background="white", text="Asset Type *").grid(row=rpos, column=0, sticky="w", padx=5, pady=5)
@@ -132,14 +139,14 @@ class AddAssetItem(tk.Frame):
         self.depreciation_rate.bind("<Return>", lambda event: self.focus_next(event, self.submit_button))
 
         rpos += rgap
-        self.submit_button = ttk.Button(self.entry_frame, text="Save", command=self.submit_form)
+        self.submit_button = ttk.Button(self.entry_frame, text="Update", command=self.submit_form)
         self.submit_button.grid(row=rpos, column=0, padx=20, pady=20, sticky="w")
         self.submit_button.bind("<Return>", lambda event: self.submit_form())
 
         self.reset_button = ttk.Button(self.entry_frame, text="Reset", command=self.reset_form)
         self.reset_button.grid(row=rpos, column=1, padx=20, pady=20, sticky="w")
 
-        self.asset_type.focus_set()
+        self.asset_serial.focus_set()
 
     def update_sub_type(self, event):
         selected_category = self.asset_type.get()[:2]
@@ -147,8 +154,34 @@ class AddAssetItem(tk.Frame):
         self.asset_sub_type["values"] = subcategories
         self.asset_sub_type.set('')
 
+    def show_asset(self):
+        self.reset_form()
+        asset_serial = self.asset_serial.get()
+        # selected_category = self.asset_type.get()[:2]
+        asset_detail = db_query.asset_detail(asset_serial)
+        if asset_detail:
+            self.asset_type.set(f"{asset_detail[0]} {asset_detail[15]}")
+            self.update_sub_type('')
+            self.asset_sub_type.set(f"{asset_detail[1]} {asset_detail[16]}")
+
+            self.inventory_number.insert(0,asset_detail[2])
+            self.description.insert(0,asset_detail[3])
+            self.date_purchase.set_date(asset_detail[4])
+            self.purchase_price.insert(0,asset_detail[5])
+            self.vender_name.insert(0,asset_detail[6])
+            self.vender_address.insert(0,asset_detail[7])
+            self.vender_phone.insert(0,asset_detail[8])
+            self.asset_location.insert(0,asset_detail[9])
+            self.asset_owner.insert(0,asset_detail[10])
+            self.asset_custodian.insert(0,asset_detail[11])
+            self.depreciation_rate.insert(0,asset_detail[12])
+        else:
+            messagebox.showerror("Information", f"Asset serial number ' {asset_serial} ' does  not exists!")
+
+
     def submit_form(self):
         # Retrieve form data
+        asset_serial = self.asset_serial.get()
         asset_type = self.asset_type.get()[:2]
         asset_sub_type = self.asset_sub_type.get()[:6]
         inventory_number = self.inventory_number.get()
@@ -168,34 +201,28 @@ class AddAssetItem(tk.Frame):
             messagebox.showerror("Error", "Fill all required fields!")
             return
 
-        if db_query.check_inventory_number(inventory_number):
-            messagebox.showerror("Error", f"Inventory number {inventory_number} already exist")
-            return
-
         if not Validation.is_valid_date(date_purchase,"%d-%m-%Y"):
             messagebox.showerror("Error", f"Date Purchase is invalid!")
             return
 
-        if float(depreciation_rate)>100:
+        if float(depreciation_rate) > 100:
             messagebox.showerror("Error", f"Depreciation rate should be less than or equal 100!")
             return
 
         date_purchase = datetime.strptime(date_purchase, "%d-%m-%Y").strftime("%Y-%m-%d")
-        serial = db_query.get_new_serial(1)
         entered_on = datetime.now()
-
         session = load_session_from_file()
         entered_by = session['userID']
 
-        data = [serial,asset_type,asset_sub_type,inventory_number,description,date_purchase,purchase_price,vender_name,vender_address
+        data = [asset_serial,asset_type,asset_sub_type,inventory_number,description,date_purchase,purchase_price,vender_name,vender_address
             ,vender_phone,asset_location,asset_owner,asset_custodian,depreciation_rate,entered_on,entered_by]
 
-        save_asset = db_query.add_asset(data)
+        save_asset = db_query.update_asset(data)
         if save_asset:
-            messagebox.showinfo("Success", f"Asset added successfully! Serial number is {serial}.")
+            messagebox.showinfo("Success", f"Asset serial {asset_serial} updated successfully!")
             self.reset_form()
         else:
-            messagebox.showerror("Error", "Failed to add asset.")
+            messagebox.showerror("Error", "Failed to update asset.")
 
     def reset_form(self):
         self.asset_type.set('')
