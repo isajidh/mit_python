@@ -7,6 +7,8 @@ from edit_asset_item import EditAssetItem
 from add_amc_detail import AddAMCDetail
 from asset_list import AssetList
 from asset_detail import AssetDetail
+from setup.Asset_Type_Configuration.assetTypeConfig import AssetTypeConfig
+
 
 from useredit import UserEdit
 from tkinter import messagebox
@@ -89,7 +91,7 @@ class Menu(tk.Frame):
         self.treeview.insert('', '4', '15', text='Change Password')
 
         # Adding sub-items
-        self.treeview.insert('11', 'end', '11-1', text='System Configuration')
+        self.treeview.insert('11', 'end', '11-1', text='Asset Type Configuration')
 
         self.treeview.insert('12', 'end', '12-1', text='Add Asset Item')
         self.treeview.insert('12', 'end', '12-2', text='Modify Asset Record')
@@ -137,6 +139,8 @@ class Main(tk.Frame):
             widget.destroy()
 
         match iid:
+            case '11-1':
+                AssetTypeConfig(self,text)
             case '12-1':
                 AddAssetItem(self, text)
             case '12-2':

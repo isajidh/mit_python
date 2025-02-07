@@ -177,6 +177,48 @@ class DBQuery:
         self.db_cursor.execute(query, (asset_serial,))
         result = self.db_cursor.fetchall()  # Fetch the first row
         return result
+        
+    def check_type_code(self, type):
+        query = "SELECT type FROM asset_type WHERE type=%s"
+        self.db_cursor.execute(query, (type,))
+
+        result = self.db_cursor.fetchone()
+        return result is not None
+
+    def check_sub_type_code(self, sub_type):
+        query = "SELECT sub_type FROM asset_sub_type WHERE sub_type=%s"
+        self.db_cursor.execute(query, (sub_type,))
+
+        result = self.db_cursor.fetchone()
+        return result is not None
+
+    def add_asset_type(self, data):
+        try:
+            query = """
+                INSERT INTO asset_type (
+                   type, description) VALUES (%s, %s)
+            """
+            self.db_cursor.execute(query, data)
+            self.db_connection.db_connection.commit()
+            return True
+        except mysql.connector.Error as err:
+            messagebox.showinfo("Error", f"Database Error: {err}")
+            return err
+
+    def add_asset_sub_type(self, data):
+        try:
+            query = """
+                INSERT INTO asset_sub_type (
+                   type, sub_type, description) VALUES (%s, %s, %s)
+            """
+            self.db_cursor.execute(query, data)
+            self.db_connection.db_connection.commit()
+            return True
+        except mysql.connector.Error as err:
+            messagebox.showinfo("Error", f"Database Error: {err}")
+            return err
+
+
 
 class SessionManager:
     def load_session_from_file(self):
