@@ -168,9 +168,10 @@ class AddAssetItem(tk.Frame):
             messagebox.showerror("Error", "Fill all required fields!")
             return
 
-        if db_query.check_inventory_number(inventory_number):
-            messagebox.showerror("Error", f"Inventory number {inventory_number} already exist")
-            return
+        if inventory_number != "":
+            if db_query.check_inventory_number(inventory_number):
+                messagebox.showerror("Error", f"Inventory number {inventory_number} already exist")
+                return
 
         if not Validation.is_valid_date(date_purchase,"%d-%m-%Y"):
             messagebox.showerror("Error", f"Date Purchase is invalid!")

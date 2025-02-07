@@ -5,6 +5,9 @@ import hashlib
 import subprocess
 import json
 from PIL import Image, ImageTk
+from db_query import DatabaseConnection, DBQuery
+from datetime import date, datetime
+import socket
 
 def save_session_to_file(session):
     with open("session.json", "w") as file:
@@ -52,7 +55,22 @@ def check_login():
                 "logged_in": True
             }
             # Save the session data to a file
+
             save_session_to_file(session)
+
+            USER_ID = userID
+            hostname = socket.gethostname()
+            LOGIN_IP = socket.gethostbyname(hostname)
+            LOGIN_TIME = datetime.now()
+            LOGIN_STATUS = 'S'
+            LOGIN_ERR = ''
+            LOGOUT_TIME = ''
+
+            data = [USER_ID, LOGIN_IP, LOGIN_TIME, LOGIN_STATUS, LOGIN_ERR, LOGOUT_TIME]
+            query = """INSERT INTO user_login (USER_ID, LOGIN_IP, LOGIN_TIME, LOGIN_STATUS, LOGIN_ERR, LOGOUT_TIME) VALUES (%s, %s, %s, %s, %s, %s)"""
+            cursor.execute(query, data)
+            connection.commit()
+
             #messagebox.showinfo("Login Success", f"Welcome!, {username},{user_role}")
 
             root.destroy()  # Close the login window
@@ -82,7 +100,7 @@ root = tk.Tk()
 root.title("Login to CMS")
 
 # Set window size and make it non-resizable
-root.geometry(f"350x300+{(root.winfo_screenwidth()-350)//2}+{(root.winfo_screenheight()-300)//2}")
+root.geometry(f"350x250+{(root.winfo_screenwidth()-350)//2}+{(root.winfo_screenheight()-300)//2}")
 root.resizable(False, False)  # Make the window non-resizable
 
 # Create a frame for a more organized layout
@@ -96,12 +114,12 @@ frame_top.config(bg="white")
 
 main_image_path = "login_left.jpg"
 main_image = Image.open(main_image_path)
-main_image = main_image.resize((120, 200))  # Resize if needed
+main_image = main_image.resize((120, 170))  # Resize if needed
 main_photo = ImageTk.PhotoImage(main_image)
 
 frame_left = tk.Frame(frame)
 frame_left.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
-frame_left.config(bg="green")
+frame_left.config(bg="lightgray")
 
 # Create a label for the main image
 main_label = tk.Label(frame_left, image=main_photo)
@@ -118,7 +136,7 @@ label_userID.config(bg="lightgray")
 
 entry_var1 = tk.StringVar()
 entry_userID = tk.Entry(frame_right, font=("Helvetica", 12), width=15, textvariable=entry_var1)
-entry_var1.set("2222")
+entry_var1.set("")
 entry_userID.grid(row=1, column=0, pady=5)
 entry_userID.bind("<Return>", lambda event: focus_next(event, entry_password))
 
@@ -128,7 +146,7 @@ label_password.config(bg="lightgray")
 
 entry_var2 = tk.StringVar()
 entry_password = tk.Entry(frame_right, show="*", font=("Helvetica", 12), width=15, textvariable=entry_var2)
-entry_var2.set("123")
+entry_var2.set("")
 entry_password.grid(row=3, column=0, pady=5)
 entry_password.bind("<Return>", lambda event: focus_next(event, login_button))
 

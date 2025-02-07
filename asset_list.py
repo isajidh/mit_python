@@ -42,6 +42,9 @@ class AssetList(tk.Frame):
         self.button_frame = tk.Frame(self, bg="white", borderwidth=0, relief="solid")
         self.button_frame.pack(fill=tk.X, padx=0, pady=0)
 
+        self.tree_frame = tk.Frame(self, bg="white", borderwidth=0, relief="solid")
+        self.tree_frame.pack(fill=tk.X, padx=0, pady=0)
+
         rpos = 2
         rgap = 2
 
@@ -91,20 +94,20 @@ class AssetList(tk.Frame):
         asset_sub_type = self.asset_sub_type.get()[:6]
 
         # Validate form data
-        if not asset_type or not asset_sub_type :
-            messagebox.showerror("Error", "Fill all required fields!")
-            return
+        if report_type == 1:
+            if not asset_type or not asset_sub_type :
+                messagebox.showerror("Error", "Fill all required fields!")
+                return
+        elif report_type == 2:
+            pass
+        elif report_type == 3:
+            if not asset_type:
+                messagebox.showerror("Error", "Fill all required fields!")
+                return
 
-        serial = db_query.get_new_serial(1)
-        entered_on = datetime.now()
-
-        session = load_session_from_file()
-        entered_by = session['userID']
-
-        view_asset = db_query.view_asset(asset_sub_type, asset_type, report_type)
+        view_asset = db_query.view_asset(asset_type, asset_sub_type, report_type)
         if view_asset:
-            messagebox.showinfo("Success", f"Asset added successfully! Serial number is.")
-            self.view_report(report_type)
+            self.view_report(view_asset)
         else:
             messagebox.showerror("Error", "Failed to view assets.")
 
@@ -112,6 +115,44 @@ class AssetList(tk.Frame):
         next_widget.focus_set()
         return "break"  # Prevents the default behavior of Enter key
 
-    def view_report(self, report_type):
-        messagebox.showinfo("Success", f"Report type.")
-        messagebox.showinfo("Success", f"Report type {report_type}.")
+    def view_report(self, view_asset):
+        style = ttk.Style()
+        style.configure("Treeview", borderwidth=3, relief="solid")  # Apply borders
+        style.configure("Treeview.Heading", font=("Arial", 10, "bold"))  # Style headings
+
+        # Create a frame to hold the table
+        self.frame4 = ttk.Frame(self.tree_frame, padding=10, borderwidth=2, width=200)
+        self.frame4.grid(row=0, column=0, sticky="nsew")
+
+        # Define columns
+        columns = [
+            [0, 'Asset Serial', 100, 'center'],
+            [1, 'Inventory Number', 100, 'center'],
+            [2, 'Description', 200, 'w'],
+            [3, 'Date Purchase', 100, 'center'],
+            [4, 'Purchase Price', 100, 'center'],
+            [5, 'Vender Name', 200, 'w'],
+            [6, 'Asset Location', 200, 'w'],
+            [7, 'AMC Expiring Date', 100, 'center'],
+        ]
+        # Create Treeview widget
+        self.tree = ttk.Treeview(self.frame4, columns=columns, show="headings", height=25)
+
+        #Add column headings
+        for col in columns:
+            self.tree.heading(col[0], text=col[1])
+            self.tree.column(col[0], anchor=col[3], width=col[2])  # Set column width
+
+        # Add a scrollbar
+        scrollbar = ttk.Scrollbar(self.frame4, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscroll=scrollbar.set)
+
+        # Pack the tree and scrollbar into the frame
+        self.tree.grid(row=0, column=0, sticky="nsew")
+        scrollbar.grid(row=0, column=1, sticky="ns")
+
+        for row in self.tree.get_children():
+            self.tree.delete(row)
+
+        for row in view_asset:
+            self.tree.insert("", "end", values=row)

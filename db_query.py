@@ -160,24 +160,71 @@ class DBQuery:
         result = self.db_cursor.fetchone()  # Fetch the first row
         return result
     def view_asset(self, asset_type, asset_sub_type, report_type):
-        query = """SELECT a.asset_type, a.asset_sub_type, a.inventory_number, a.description, a.date_purchase,
-                    a.purchase_price, a.vender_name, a.vender_address, a.vender_phone, a.asset_location, a.asset_owner, a.asset_custodian, 
-                    a.depreciation_rate, a.entered_on, a.entered_by,
-                    (SELECT description from asset_type t where t.type=a.asset_type) asset_type_name,
-                    (SELECT description from asset_sub_type s where s.type=a.asset_type and s.sub_type=a.asset_sub_type) asset_sub_type_name,
-                    c.amc_start_date,c.amc_end_date
-                    FROM asset a, amc c WHERE a.asset_serial=c.asset_serial and a.asset_type=%s and a.asset_sub_type=%s and a.deleted=%s"""
-
-        self.db_cursor.execute(query, (asset_type, asset_sub_type,0,))
-        result = self.db_cursor.fetchone()  # Fetch the first row
+        match report_type:
+            case 1:
+                query = """SELECT a.asset_serial, a.inventory_number, a.description, a.date_purchase,
+                            a.purchase_price, a.vender_name, a.asset_location, 
+                            (SELECT c.amc_end_date FROM amc c where c.asset_serial=a.asset_serial and c.is_current=1) amc_end_date,
+                            a.vender_address, a.vender_phone, a.asset_owner, a.asset_custodian,                  
+                            a.depreciation_rate, a.entered_on, a.entered_by,a.asset_type, a.asset_sub_type, 
+                            (SELECT description from asset_type t where t.type=a.asset_type) asset_type_name,
+                            (SELECT description from asset_sub_type s where s.type=a.asset_type and s.sub_type=a.asset_sub_type) asset_sub_type_name
+                            FROM asset a WHERE a.asset_type=%s and a.asset_sub_type=%s and a.deleted=%s"""
+                self.db_cursor.execute(query, (asset_type, asset_sub_type, 0,))
+            case 2:
+                query = """SELECT a.asset_serial, a.inventory_number, a.description, a.date_purchase,
+                            a.purchase_price, a.vender_name, a.asset_location, 
+                            (SELECT c.amc_end_date FROM amc c where c.asset_serial=a.asset_serial and c.is_current=1) amc_end_date,
+                            a.vender_address, a.vender_phone, a.asset_owner, a.asset_custodian,                  
+                            a.depreciation_rate, a.entered_on, a.entered_by,a.asset_type, a.asset_sub_type, 
+                            (SELECT description from asset_type t where t.type=a.asset_type) asset_type_name,
+                            (SELECT description from asset_sub_type s where s.type=a.asset_type and s.sub_type=a.asset_sub_type) asset_sub_type_name
+                            FROM asset a WHERE a.deleted=%s"""
+                self.db_cursor.execute(query, (0,))
+            case 3:
+                query = """SELECT a.asset_serial, a.inventory_number, a.description, a.date_purchase,
+                            a.purchase_price, a.vender_name, a.asset_location, 
+                            (SELECT c.amc_end_date FROM amc c where c.asset_serial=a.asset_serial and c.is_current=1) amc_end_date,
+                            a.vender_address, a.vender_phone, a.asset_owner, a.asset_custodian,                  
+                            a.depreciation_rate, a.entered_on, a.entered_by,a.asset_type, a.asset_sub_type, 
+                            (SELECT description from asset_type t where t.type=a.asset_type) asset_type_name,
+                            (SELECT description from asset_sub_type s where s.type=a.asset_type and s.sub_type=a.asset_sub_type) asset_sub_type_name
+                            FROM asset a WHERE a.asset_type=%s and a.deleted=%s"""
+                self.db_cursor.execute(query, (asset_type, 0,))
+        result = self.db_cursor.fetchall()  # Fetch the first row
         return result
+
+    def amc_expiring(self, date_1, date_2):
+        query = """select a.asset_serial, a.inventory_number, a.description, a.date_purchase,
+                a.purchase_price, a.vender_name, a.asset_location,c.amc_end_date
+                from asset a, amc c
+                where a.asset_serial = c.asset_serial and c.amc_end_date  between %s and %s and a.deleted = %s"""
+        self.db_cursor.execute(query, (date_1, date_2, 0,))
+        result = self.db_cursor.fetchall()  # Fetch the first row
+        return result
+
     def amc_history(self, asset_serial):
         query = """SELECT amc_signed_date, amc_start_date, amc_end_date, charge_amount, remarks, is_current
          FROM amc WHERE asset_serial=%s order by entered_on desc"""
         self.db_cursor.execute(query, (asset_serial,))
         result = self.db_cursor.fetchall()  # Fetch the first row
         return result
+
+    def add_login(self, data):
+        try:
+            query = """
+                INSERT INTO user_login (
+                    USER_ID, LOGIN_IP, LOGIN_TIME, LOGIN_STATUS, LOGIN_ERR, LOGOUT_TIME
+                ) VALUES (%s, %s, %s, %s, %s, %s)
+            """
+            self.db_cursor.execute(query, data)
+            self.db_connection.db_connection.commit()
+            return True
+        except mysql.connector.Error as err:
+            messagebox.showinfo("Error", f"Database Error: {err}")
+            return err
         
+# functions for asset type configuration
     def check_type_code(self, type):
         query = "SELECT type FROM asset_type WHERE type=%s"
         self.db_cursor.execute(query, (type,))
@@ -217,8 +264,6 @@ class DBQuery:
         except mysql.connector.Error as err:
             messagebox.showinfo("Error", f"Database Error: {err}")
             return err
-
-
 
 class SessionManager:
     def load_session_from_file(self):

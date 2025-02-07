@@ -6,9 +6,6 @@ from db_query import DatabaseConnection, DBQuery
 from validation import Validation
 import json
 
-
-
-# Initialize Database Connection
 db_conn = DatabaseConnection()
 db_query = DBQuery(db_conn)
 
@@ -71,9 +68,6 @@ class AddAMCDetail(tk.Frame):
 
         #Blank line
         ttk.Label(self.entry_frame, background="white", text="").grid(row=rpos, column=0, sticky="w", padx=5, pady=5)
-
-        # Fetch asset types from the database
-        asset_types = db_query.asset_type()
 
         rpos += rgap
         ttk.Label(self.frame1, background="white", text="Asset Serial Number", font=("Arial", 10, "bold")).grid(row=rpos, column=0, sticky="w", padx=5, pady=5)

@@ -7,11 +7,10 @@ from edit_asset_item import EditAssetItem
 from add_amc_detail import AddAMCDetail
 from asset_list import AssetList
 from asset_detail import AssetDetail
-from setup.Asset_Type_Configuration.assetTypeConfig import AssetTypeConfig
-
-
 from useredit import UserEdit
+from list_amc_expiring import ListAMCExpiring
 from tkinter import messagebox
+from PIL import Image, ImageTk
 import json
 
 def load_session_from_file():
@@ -60,9 +59,22 @@ class TopBar(tk.Frame):
     def create_widgets(self):
         session = load_session_from_file()
         # Example widgets for the top bar
-        label = ttk.Label(self, text="Top Bar", anchor="center")
+        label = ttk.Label(self, text="RDB - Annual Maintenance Agreement Tracking System", anchor="center", background="mediumseagreen", font=("Arial", 12, "bold"))
         button = ttk.Button(self, text="Logout",command=logout)
-        label2 = ttk.Label(self, text=f"Welcome! {session['username']}", anchor="center")
+        label2 = ttk.Label(self, text=f"Welcome! {session['username']}", anchor="center", background="mediumseagreen")
+
+        header_image_path = "header.jpg"
+        header_image = Image.open(header_image_path)
+        header_image = header_image.resize((120, 200))  # Resize if needed
+        header_photo = ImageTk.PhotoImage(header_image)
+
+        # # frame_left = tk.Frame(self)
+        # # frame_left.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
+        # # frame_left.config(bg="green")
+        #
+        # # Create a label for the main image
+        # main_label = tk.Label(self, image=header_photo)
+        #main_label.pack
 
         # Layout
         label.pack(side="left", padx=10)
@@ -83,30 +95,38 @@ class Menu(tk.Frame):
         self.treeview = ttk.Treeview(self)
         self.treeview.pack(fill='both', expand=True, padx=0, pady=0)
 
+        role = session["role"]
+
         # Adding items to the treeview
-        self.treeview.insert('', '0', '11', text='Setup')
-        self.treeview.insert('', '1', '12', text='Assets')
-        self.treeview.insert('', '2', '13', text='Reports')
-        self.treeview.insert('', '3', '14', text='User Management')
-        self.treeview.insert('', '4', '15', text='Change Password')
+        if role in {1}:
+            self.treeview.insert('', '0', '11', text='Setup')
+            self.treeview.insert('11', 'end', '11-1', text='Asset Type Configuration')
 
-        # Adding sub-items
-        self.treeview.insert('11', 'end', '11-1', text='Asset Type Configuration')
+        if role in {1, 2, 3}:
+            self.treeview.insert('', '1', '12', text='Assets')
+            self.treeview.insert('12', 'end', '12-1', text='Add Asset Item')
+            self.treeview.insert('12', 'end', '12-2', text='Modify Asset Record')
+            self.treeview.insert('12', 'end', '12-3', text='Add AMC Detail')
 
-        self.treeview.insert('12', 'end', '12-1', text='Add Asset Item')
-        self.treeview.insert('12', 'end', '12-2', text='Modify Asset Record')
-        self.treeview.insert('12', 'end', '12-3', text='Add AMC Detail')
+        if role in {1, 2, 3}:
+            self.treeview.insert('', '2', '13', text='Reports')
+            self.treeview.insert('13', 'end', '13-1', text='View Assets Detail')
+            self.treeview.insert('13', 'end', '13-2', text='List of Assets')
+            self.treeview.insert('13', 'end', '13-3', text='List of Items Expiring AMC')
+            self.treeview.insert('13', 'end', '13-4', text='List of Items AMC Recently Renewed')
+            self.treeview.insert('13', 'end', '13-5', text='List of Users')
+            self.treeview.insert('13', 'end', '13-6', text='Users Login Detail')
 
-        self.treeview.insert('13', 'end', '13-1', text='View Assets Detail')
-        self.treeview.insert('13', 'end', '13-2', text='List of Assets')
-        self.treeview.insert('13', 'end', '13-3', text='List of Items Expiring AMC')
-        self.treeview.insert('13', 'end', '13-4', text='List of Items AMC Recently Renewed')
-        self.treeview.insert('13', 'end', '13-5', text='List of Users')
+        if role in {1}:
+            self.treeview.insert('', '3', '14', text='User Management')
+            self.treeview.insert('14', 'end', '14-1', text='Add New User')
+            self.treeview.insert('14', 'end', '14-2', text='Edit User')
+            self.treeview.insert('14', 'end', '14-3', text='Deactivate User')
+            self.treeview.insert('14', 'end', '14-4', text='Test')
 
-        self.treeview.insert('14', 'end', '14-1', text='Add New User')
-        self.treeview.insert('14', 'end', '14-2', text='Edit User')
-        self.treeview.insert('14', 'end', '14-3', text='Deactivate User')
-        self.treeview.insert('14', 'end', '14-4', text='Test')
+        if role in {1, 2, 3}:
+            self.treeview.insert('', '4', '15', text='Change Password')
+
         # Bind the treeview selection
         self.treeview.bind("<<TreeviewSelect>>", self.on_tree_item_click)
 
@@ -139,8 +159,6 @@ class Main(tk.Frame):
             widget.destroy()
 
         match iid:
-            case '11-1':
-                AssetTypeConfig(self,text)
             case '12-1':
                 AddAssetItem(self, text)
             case '12-2':
@@ -151,6 +169,10 @@ class Main(tk.Frame):
                 AssetDetail(self, text)
             case '13-2':
                 AssetList(self, text)
+            case '13-3':
+                ListAMCExpiring(self, text)
+            case '13-6':
+                UserLoginDetail(self, text)
             case '14-1':
                 UserCreation(self, text)
             case '14-2':
@@ -168,4 +190,4 @@ class Main(tk.Frame):
         self.update_content("Main Area Cleared")
 
 
-App('Class Based App', (600, 600))
+App('AMC Tracking System', (600, 600))
