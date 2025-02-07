@@ -6,6 +6,9 @@ from db_query import DatabaseConnection, DBQuery
 from validation import Validation
 import json
 
+
+
+# Initialize Database Connection
 db_conn = DatabaseConnection()
 db_query = DBQuery(db_conn)
 
